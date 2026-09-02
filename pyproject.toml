@@ -1,0 +1,131 @@
+[project]
+name = "binaria"
+version = "0.1.0"
+description = "Regularised, GPU-accelerated SiGMoiD implementation with model-selection tooling"
+readme = "README.md"
+authors = [
+    { name = "Nicholas Gecks", email = "nicholas.gecks@proton.me" }
+]
+maintainers = [
+    { name = "Nicholas Gecks", email = "nicholas.gecks@proton.me" }
+]
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+keywords = [
+    "binary matrix factorization",
+    "computational biology",
+    "logistic matrix factorization",
+    "model selection",
+    "pytorch",
+    "sigmoid",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.4.6",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.17.1",
+    "torch>=2.13.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/GecklesTheClown/binaria"
+Documentation = "https://gecklestheclown.github.io/binaria/"
+Repository = "https://github.com/GecklesTheClown/binaria.git"
+Issues = "https://github.com/GecklesTheClown/binaria/issues"
+Changelog = "https://github.com/GecklesTheClown/binaria/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["uv_build>=0.11.30,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.165.1",
+    "import-linter>=2.13",
+    "mypy>=2.3.0",
+    "pre-commit>=4.6.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.1",
+]
+docs = [
+    "mkdocs-material>=9.7.7",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting/grouping)
+    "N",   # pep8-naming
+    "UP",  # pyupgrade — flag syntax older than target-version
+    "B",   # flake8-bugbear — common bug patterns
+    "C4",  # flake8-comprehensions
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "N812", # `torch.nn.functional as F` is the universal PyTorch convention
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # re-exports are meant to be unused within the module
+
+[tool.ruff.lint.isort]
+known-first-party = ["binaria"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["pandas.*", "scipy.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "sklearn.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config --cov=binaria --cov-report=term-missing"
+markers = [
+    "slow: runs a full selection sweep (seconds to minutes per test)",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+
+[tool.importlinter]
+root_package = "binaria"
+
+[[tool.importlinter.contracts]]
+name = "core must not depend on the public estimator"
+type = "forbidden"
+source_modules = ["binaria._core"]
+forbidden_modules = ["binaria.estimator"]

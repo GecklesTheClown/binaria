@@ -1,0 +1,27 @@
+site_name: Binaria
+site_description: Python and PyTorch implementation of SiGMoiD (Zhao et al. 2021)
+repo_url: https://github.com/GecklesTheClown/binaria
+repo_name: GecklesTheClown/binaria
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Optimization diagnostics: diagnostics.md
+  - Interpreting model selection: selecting-k.md

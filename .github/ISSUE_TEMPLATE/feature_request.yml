@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an addition or change to Binaria
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Binaria v1 is a binary-matrix decomposition core with an sklearn-style
+        API. Domain-specific I/O and downstream analysis (pan-genome parsing,
+        clustering, etc.) are out of scope for core.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Describe the workflow you want to enable
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Describe your proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered, if relevant
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

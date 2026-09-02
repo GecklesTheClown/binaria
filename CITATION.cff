@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: Binaria
+authors:
+  - given-names: Nicholas
+    family-names: Gecks
+    email: nicholas.gecks@proton.me
+repository-code: "https://github.com/GecklesTheClown/binaria"
+license: BSD-3-Clause
+references:
+  - type: article
+    title: "SiGMoiD: A super-statistical generative model for binary data"
+    authors:
+      - given-names: Xiaochuan
+        family-names: Zhao
+        orcid: "https://orcid.org/0000-0002-0127-4789"
+      - given-names: Germán
+        family-names: Plata
+        orcid: "https://orcid.org/0000-0002-6470-7748"
+      - given-names: "Purushottam D."
+        family-names: Dixit
+        orcid: "https://orcid.org/0000-0003-3282-0866"
+        email: pdixit@ufl.edu
+    journal: "PLOS Computational Biology"
+    year: 2021
+    volume: 17
+    issue: 8
+    doi: "10.1371/journal.pcbi.1009275"
+    license: CC-BY-4.0

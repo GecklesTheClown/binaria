@@ -1,0 +1,74 @@
+name: Bug report
+description: Something in Binaria isn't behaving the way it should
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched existing issues and didn't find this already reported
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        See [this guide](https://matthewrocklin.com/blog/work/2018/02/28/minimal-bug-reports) for what makes a bug report easy to act on.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: |
+        Prefer synthetic data (`torch.bernoulli`, `numpy.random`, etc.) over real
+        genomic/microbiome data — it can't be attached to a public issue and
+        slows reproduction down. If it runs standalone with `uv run`, even better:
+
+        ```python
+        # /// script
+        # dependencies = ["binaria @ git+https://github.com/GecklesTheClown/binaria.git"]
+        # ///
+        import binaria
+        ...
+        ```
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Error output
+      description: Full traceback, if there is one. Leave blank if this is a wrong-result bug rather than a crash.
+      render: pytb
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Numerical configuration (if relevant)
+      description: Gradient path (analytic/autograd), dtype (float32/float64), device (CPU/CUDA) — matters for convergence or precision bugs.
+
+  - type: input
+    id: version
+    attributes:
+      label: Binaria version / commit
+      description: Output of `uv pip show binaria`, or the commit hash if installed from source.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Output of `python -c "import sys, torch; print(sys.version); print(torch.__version__)"`, plus your OS.
+    validations:
+      required: true

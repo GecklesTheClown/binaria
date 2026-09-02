@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: lint, format, typecheck, import boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - run: uv sync --group dev
+
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run lint-imports
+
+  # The cross-platform matrix runs everything EXCEPT the full selection
+  # sweeps. Those take ten minutes or more per platform, and what they
+  # exercise -- whether selection recovers k -- is arithmetic that does not
+  # vary by OS or Python version. Running them five times over would buy
+  # nothing for roughly forty minutes of runner time per push, so they run
+  # once, in the `slow` job below.
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.13"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - run: uv sync --group dev
+
+      - name: Run tests
+        shell: bash
+        run: uv run pytest -m "not slow"
+
+  slow:
+    # Every test marked `slow` -- the recovery sweeps that check selection
+    # actually finds the right k. These run on one platform because they
+    # are the slowest thing in the suite and the least OS-dependent, but
+    # they run on every push rather than nightly: a regression here means
+    # selection is broken, and finding that out a day later is too late.
+    name: recovery sweeps (slow)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - run: uv sync --group dev
+
+      - name: Run slow tests
+        run: uv run pytest -m slow
