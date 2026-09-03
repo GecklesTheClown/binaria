@@ -267,6 +267,7 @@ def test_audit_mode_records_and_saves_the_complete_decision(tmp_path: Path) -> N
     trail = selector.audit_trail_
     assert len(trail["settings"]["data_digest"]) == 64
     assert trail["settings"]["patience"] == selector.patience
+    assert trail["settings"]["stopping_rule"] == selector.stopping_rule
     assert len(trail["fits"]) == 4
     assert len(trail["summary"]) == 2
     assert trail["decision"]["selected"]["n_components"] == selector.best_n_components_
@@ -574,6 +575,7 @@ def test_rejects_a_bad_n_repeats_value() -> None:
         {"patience": 0},
         {"patience": True},
         {"patience": 1.5},
+        {"stopping_rule": "wrong"},
         {"learning_rate": 0.0},
         {"gradient": "wrong"},
         {"dtype": torch.int64},
@@ -600,6 +602,20 @@ def test_selector_rejects_an_unknown_test() -> None:
     )
     with pytest.raises(ValueError, match="test must be"):
         selector.fit(_synthetic_binary(20, 12, true_k=2).numpy())
+
+
+def test_energy_gradient_stopping_rule_supports_penalized_selector_cells() -> None:
+    selector = SiGMoiDSelector(
+        [2],
+        alpha_range=(0.0, 0.1),
+        n_repeats=2,
+        stopping_rule="energy_gradient",
+        tol=1e9,
+        patience=1,
+        max_iter=2,
+    ).fit(_synthetic_binary(20, 10, true_k=2).numpy())
+
+    assert bool(selector.cv_results_["converged"].all())
 
 
 def test_default_alpha_range_resolves_by_criterion() -> None:

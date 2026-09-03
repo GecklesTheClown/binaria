@@ -12,7 +12,13 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
 from binaria._core import Core
-from binaria._optim import GradientPath, OptimizerName, _ConvergenceMonitor, make_optimizer
+from binaria._optim import (
+    GradientPath,
+    OptimizerName,
+    StoppingRule,
+    _ConvergenceMonitor,
+    make_optimizer,
+)
 from binaria._optim import fit as _fit_core
 from binaria.callbacks import Callback, History
 from binaria.validation import to_output, validate_binary_matrix
@@ -40,11 +46,21 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Maximum optimizer iterations. Check ``converged_`` after fitting;
         the current default has not been established empirically.
     tol : float, default=1e-6
-        Relative penalized-objective change used by the convergence check.
+        Threshold applied to the statistic selected by ``stopping_rule``.
         See ``patience`` and ``converged_``.
     patience : int, default=100
-        Number of consecutive iterations whose relative penalized-objective
-        change must be below ``tol`` before the fit is considered converged.
+        Number of consecutive qualifying checks required before the fit is
+        considered converged. A check qualifies when the statistic selected
+        by ``stopping_rule`` is below ``tol``.
+    stopping_rule : {"objective", "energy_gradient"}, default="objective"
+        Statistic used to determine convergence during the joint fit.
+        ``"objective"`` monitors relative penalized-objective change.
+        ``"energy_gradient"`` monitors
+        ``||gradient_E objective||_F / ||E||_F``. With ``alpha=0``, setting
+        ``tol=1e-3`` and ``patience=1`` tests the stopping threshold used by
+        the original authors. Beta-only fits in ``transform`` and ``score``
+        continue to use objective change because their energy matrix is
+        frozen.
     learning_rate : float, default=0.1
         Optimizer learning rate. The default is provisional and intended
         for Adam; choose an explicit value when using SGD.
@@ -109,7 +125,7 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     fit_time_ : float
         Wall-clock seconds spent in the optimizer.
     converged_ : bool
-        Whether relative penalized-objective change stayed below ``tol`` for
+        Whether the selected stopping statistic stayed below ``tol`` for
         ``patience`` consecutive iterations before ``max_iter`` was reached.
     log_likelihood_ : float
         Log-likelihood (Eq 2) of the training data under the fitted
@@ -133,6 +149,7 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         max_iter: int = 6000,
         tol: float = 1e-6,
         patience: int = 100,
+        stopping_rule: StoppingRule = "objective",
         learning_rate: float = 0.1,
         optimizer: OptimizerName = "adam",
         gradient: GradientPath = "analytic",
@@ -151,6 +168,7 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self.max_iter = max_iter
         self.tol = tol
         self.patience = patience
+        self.stopping_rule = stopping_rule
         self.learning_rate = learning_rate
         self.optimizer = optimizer
         self.gradient = gradient
@@ -226,6 +244,11 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             or self.patience < 1
         ):
             raise ValueError(f"patience must be a positive int, got {self.patience!r}")
+        if self.stopping_rule not in ("objective", "energy_gradient"):
+            raise ValueError(
+                "stopping_rule must be 'objective' or 'energy_gradient', "
+                f"got {self.stopping_rule!r}"
+            )
         if (
             not isinstance(self.learning_rate, Real)
             or not math.isfinite(self.learning_rate)
@@ -299,6 +322,7 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             max_iter=self.max_iter,
             tol=self.tol,
             patience=self.patience,
+            stopping_rule=self.stopping_rule,
             lr=self.learning_rate,
             optimizer=self.optimizer,
             gradient=self.gradient,
@@ -438,9 +462,9 @@ class SiGMoiD(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         Calling this on the exact training data will *not* closely match
         ``log_likelihood_`` unless ``fit`` actually reached
-        ``converged_ = True`` -- both fit the same optimization problem
-        with the same budget (``max_iter``/``tol``), and an under-converged
-        outer fit means an under-converged refit here too.
+        ``converged_ = True``. The refit uses the same optimizer and
+        ``max_iter``/``tol``/``patience`` budget, but always monitors objective
+        change because its energy matrix is frozen.
 
         Parameters
         ----------

@@ -30,7 +30,7 @@ from scipy.stats import binomtest, false_discovery_control, ttest_1samp
 from sklearn.base import BaseEstimator
 
 from binaria._core import Core
-from binaria._optim import GradientPath, OptimizerName
+from binaria._optim import GradientPath, OptimizerName, StoppingRule
 from binaria._optim import fit as _fit_core
 from binaria.executors import Executor, SerialExecutor, current_device
 from binaria.validation import validate_binary_matrix
@@ -215,6 +215,7 @@ class _FitJob:
     max_iter: int
     tol: float
     patience: int
+    stopping_rule: StoppingRule
     learning_rate: float
     optimizer: OptimizerName
     gradient: GradientPath
@@ -358,6 +359,7 @@ def _execute_fit_job(job: _FitJob) -> dict[str, object]:
         max_iter=job.max_iter,
         tol=job.tol,
         patience=job.patience,
+        stopping_rule=job.stopping_rule,
         lr=job.learning_rate,
         optimizer=job.optimizer,
         gradient=job.gradient,
@@ -447,7 +449,7 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
     max_iter : int, default=6000
         Maximum optimizer iterations for each fit. Check
         ``cv_results_["converged"]`` when interpreting the result.
-    tol, patience, learning_rate, optimizer, gradient, dtype, device
+    tol, patience, stopping_rule, learning_rate, optimizer, gradient, dtype, device
         Passed through to each individual fit.
 
         ``optimizer`` accepts ``"adam"`` (the default) or ``"sgd"``.
@@ -536,6 +538,7 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
         max_iter: int = 6000,
         tol: float = 1e-6,
         patience: int = 100,
+        stopping_rule: StoppingRule = "objective",
         learning_rate: float = 0.1,
         optimizer: OptimizerName = "adam",
         gradient: GradientPath = "analytic",
@@ -556,6 +559,7 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
         self.max_iter = max_iter
         self.tol = tol
         self.patience = patience
+        self.stopping_rule = stopping_rule
         self.learning_rate = learning_rate
         self.optimizer = optimizer
         self.gradient = gradient
@@ -782,7 +786,7 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
         # changed setting resumes silently and corrupts the sweep, while a
         # spurious one only costs a refit.
         fingerprint: dict[str, object] = {
-            "result_schema_version": 3,
+            "result_schema_version": 4,
             "package_version": importlib.metadata.version("binaria"),
             "components": tuple(components),
             "alphas": tuple(alphas),
@@ -794,6 +798,7 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
             "max_iter": self.max_iter,
             "tol": self.tol,
             "patience": self.patience,
+            "stopping_rule": self.stopping_rule,
             "learning_rate": self.learning_rate,
             "optimizer": self.optimizer,
             "gradient": self.gradient,
@@ -830,6 +835,7 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
                         max_iter=self.max_iter,
                         tol=self.tol,
                         patience=self.patience,
+                        stopping_rule=self.stopping_rule,
                         learning_rate=self.learning_rate,
                         optimizer=self.optimizer,
                         gradient=self.gradient,
@@ -1039,6 +1045,11 @@ class SiGMoiDSelector(BaseEstimator):  # type: ignore[misc]
             or self.patience < 1
         ):
             raise ValueError(f"patience must be a positive int, got {self.patience!r}")
+        if self.stopping_rule not in ("objective", "energy_gradient"):
+            raise ValueError(
+                "stopping_rule must be 'objective' or 'energy_gradient', "
+                f"got {self.stopping_rule!r}"
+            )
         if (
             not isinstance(self.learning_rate, Real)
             or not math.isfinite(self.learning_rate)

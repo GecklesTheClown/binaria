@@ -84,11 +84,29 @@ def test_loading_a_legacy_save_preserves_the_old_one_hit_rule(tmp_path: Path) ->
     save(model, path)
     state = torch.load(path, weights_only=False)
     del state["params"]["patience"]
+    del state["params"]["stopping_rule"]
     torch.save(state, path)
 
     reloaded = load(path)
 
     assert reloaded.patience == 1
+    assert reloaded.stopping_rule == "objective"
+
+
+def test_round_trip_preserves_the_energy_gradient_stopping_rule(tmp_path: Path) -> None:
+    model = _fitted(
+        alpha=0.2,
+        stopping_rule="energy_gradient",
+        tol=1e9,
+        patience=1,
+        max_iter=2,
+    )
+    path = tmp_path / "energy-gradient.pt"
+    save(model, path)
+
+    reloaded = load(path)
+
+    assert reloaded.stopping_rule == "energy_gradient"
 
 
 def test_saving_an_unfitted_estimator_raises(tmp_path: Path) -> None:

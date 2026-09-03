@@ -88,6 +88,22 @@ maximum absolute logit, and probability-saturation fractions over time. See
 By default, convergence requires 100 consecutive iterations with relative
 penalized-objective change below `tol=1e-6`.
 
+An energy-normalized objective-gradient statistic is also available. With
+`alpha=0`, it reduces to the original authors' likelihood-gradient rule:
+
+```python
+authors_stopping_rule = SiGMoiD(
+    n_components=4,
+    alpha=0.0,
+    stopping_rule="energy_gradient",
+    tol=1e-3,
+    patience=1,
+).fit(x)
+```
+
+This changes only the stopping decision; choose the optimizer, learning rate,
+initialization, and iteration budget separately when comparing procedures.
+
 `best_n_components_` is always populated. Read it together with
 `selection_rule_`, `tied_n_components_`, and the convergence values in
 `cv_results_`. See [Interpreting model selection](docs/selecting-k.md).

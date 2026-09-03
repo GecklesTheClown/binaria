@@ -36,8 +36,8 @@ configured stride. Except for `gradient_norm`, each entry describes the model
 
 ## Convergence
 
-After each update, Binaria computes the relative change in the penalized
-objective:
+The default `stopping_rule="objective"` computes the relative change in the
+penalized objective after each update:
 
 \[
 r_t =
@@ -51,6 +51,25 @@ non-qualifying iteration resets the streak. Iteration 1 establishes the
 baseline, so the earliest possible convergence with the defaults is iteration
 101. Reaching `max_iter` is not convergence, and unpenalized fits (`alpha=0`)
 never claim a finite optimum through this rule.
+
+An alternative rule monitors the energy gradient of the optimized objective:
+
+\[
+g_t =
+\frac{\left\lVert \nabla_E \mathcal L(\beta,E)\right\rVert_F}
+     {\left\lVert E\right\rVert_F}.
+\]
+
+For L2-regularized fitting,
+\(\nabla_E\mathcal L=\beta^\top(\pi-D)-2\alpha E\). At `alpha=0` this
+reduces to the original authors' likelihood-gradient statistic. Set
+`stopping_rule="energy_gradient"`, `alpha=0`, `tol=1e-3`, and `patience=1`
+to test their threshold. The numerator is the objective gradient that produced
+the update; the denominator is the post-update energy norm, matching the
+historical calculation. Larger patience values require consecutive qualifying
+checks. This rule applies to the joint fit only: `transform` and `score` freeze
+the energy matrix and therefore retain objective-change stopping for their
+beta-only refits.
 
 ## Recorded quantities
 

@@ -61,6 +61,48 @@ def test_nonqualifying_change_resets_the_patience_streak() -> None:
     assert monitor.update(89.0) is True
 
 
+@pytest.mark.parametrize("gradient", ["analytic", "autograd"])
+@pytest.mark.parametrize("alpha", [0.0, 0.2])
+def test_energy_gradient_rule_uses_the_objective_gradient(gradient: str, alpha: float) -> None:
+    data = _binary(4, 3)
+    torch.manual_seed(1)
+    core = Core(4, 3, 2)
+    _, grad_energy = core.analytic_gradients(data)
+    objective_grad_energy = grad_energy - 2.0 * alpha * core.energy.detach()
+    statistic = objective_grad_energy.norm().item() / core.energy.norm().item()
+
+    result = fit(
+        core,
+        data,
+        alpha=alpha,
+        gradient=gradient,  # type: ignore[arg-type]
+        lr=0.0,
+        max_iter=1,
+        tol=statistic * 1.01,
+        patience=1,
+        stopping_rule="energy_gradient",
+    )
+
+    assert result.converged is True
+    assert result.n_iter == 1
+
+
+def test_energy_gradient_rule_respects_patience() -> None:
+    result = fit(
+        Core(4, 3, 2),
+        _binary(4, 3),
+        alpha=0.0,
+        lr=0.0,
+        max_iter=5,
+        tol=1e9,
+        patience=3,
+        stopping_rule="energy_gradient",
+    )
+
+    assert result.converged is True
+    assert result.n_iter == 3
+
+
 @pytest.mark.parametrize("alpha", [0.0, 0.2])
 def test_sgd_analytic_and_autograd_paths_are_bit_identical(alpha: float) -> None:
     data = _binary()
@@ -88,6 +130,8 @@ def test_default_optimizer_remains_bit_identical_to_explicit_adam() -> None:
     assert SiGMoiD(n_components=2).optimizer == "adam"
     assert SiGMoiDSelector([2]).optimizer == "adam"
     assert SiGMoiDSelector([2]).patience == 100
+    assert SiGMoiD(n_components=2).stopping_rule == "objective"
+    assert SiGMoiDSelector([2]).stopping_rule == "objective"
     data = _binary()
     fitted = []
     for kwargs in ({}, {"optimizer": "adam"}):
@@ -148,3 +192,20 @@ def test_selector_runs_its_fits_with_sgd() -> None:
 
     assert selector.optimizer == "sgd"
     assert selector.cv_results_["score"].shape == (2,)
+
+
+def test_selector_propagates_the_energy_gradient_stopping_rule() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        selector = SiGMoiDSelector(
+            [2],
+            alpha_range=(0.0,),
+            n_repeats=2,
+            max_iter=2,
+            tol=1e9,
+            patience=1,
+            stopping_rule="energy_gradient",
+            random_state=0,
+        ).fit(_binary())
+
+    assert bool(selector.cv_results_["converged"].all())

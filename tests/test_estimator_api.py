@@ -132,6 +132,7 @@ def test_fit_sets_the_documented_attributes_with_the_right_shapes() -> None:
         {"patience": 0},
         {"patience": True},
         {"patience": 1.5},
+        {"stopping_rule": "wrong"},
         {"learning_rate": 0.0},
         {"alpha": -1.0},
         {"gradient": "wrong"},
@@ -156,6 +157,19 @@ def test_fit_does_not_disturb_global_rng_state() -> None:
     SiGMoiD(n_components=2, max_iter=1, random_state=99).fit(data)
 
     assert torch.equal(torch.rand(3), expected)
+
+
+def test_energy_gradient_stopping_rule_supports_a_penalized_fit() -> None:
+    model = SiGMoiD(
+        n_components=2,
+        stopping_rule="energy_gradient",
+        tol=1e9,
+        patience=1,
+        max_iter=2,
+    ).fit(_binary())
+
+    assert model.converged_ is True
+    assert model.n_iter_ == 1
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is not available")

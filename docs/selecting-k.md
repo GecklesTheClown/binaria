@@ -26,7 +26,7 @@ describe how the choice was made:
 | `selection_rule_ == "separation"` | The leading cell passed the configured pairwise test against its rivals. |
 | `selection_rule_ == "parsimony"` | The test did not identify a unique leader, so the selector used its simplicity tie-break. |
 | `tied_n_components_` | Component counts not distinguished from the leading cell by the configured test. |
-| `cv_results_["converged"]` | Whether relative penalized-objective change stayed below `tol` for `patience` consecutive iterations before `max_iter`. |
+| `cv_results_["converged"]` | Whether the configured `stopping_rule` stayed below `tol` for `patience` consecutive checks before `max_iter`. |
 
 These are descriptions of the implemented procedure, not evidence that the
 selected value is correct for a particular dataset. Inspect `cv_results_` and

@@ -79,6 +79,7 @@ def load(path: str | Path, *, map_location: str | torch.device | None = "cpu") -
     # Before patience existed, one qualifying relative change stopped a fit.
     # Preserve that behaviour when an old save is re-fit or used by score().
     params.setdefault("patience", 1)
+    params.setdefault("stopping_rule", "objective")
     estimator = SiGMoiD(**params)
 
     beta = state["model_state_dict"]["beta"]

@@ -130,6 +130,7 @@ def test_a_partial_checkpoint_completes_the_rest(tmp_path: Path) -> None:
         {"random_state": 1},
         {"max_iter": 80},
         {"patience": 5},
+        {"stopping_rule": "energy_gradient"},
         {"alpha_range": (0.0, 0.25)},
         {"learning_rate": 0.02},
         {"optimizer": "sgd", "learning_rate": 1e-4},
